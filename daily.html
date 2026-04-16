@@ -1,0 +1,1455 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>甜點店營運系統 (專業動態版)</title>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Noto+Sans+TC:wght@300;400;500;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #ff8fa3;
+            --primary-light: #ffb3c1;
+            --secondary: #ffcbf2;
+            --accent: #83c5be;
+            --text-dark: #2b2d42;
+            --text-light: #6c757d;
+            --bg-gradient: linear-gradient(135deg, #fdfbf7 0%, #fff0f3 100%);
+            --glass-bg: rgba(255, 255, 255, 0.7);
+            --glass-border: rgba(255, 255, 255, 0.5);
+            --shadow: 0 8px 32px rgba(255, 143, 163, 0.1);
+            --danger: #ef233c;
+            --success: #2b9348;
+        }
+
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+
+        body {
+            font-family: 'Outfit', 'Noto Sans TC', sans-serif;
+            background: var(--bg-gradient);
+            background-size: cover;
+            background-attachment: fixed;
+            color: var(--text-dark);
+            min-height: 100vh;
+            padding: 2rem;
+        }
+
+        /* Decorative blobs */
+        .blob { position: fixed; border-radius: 50%; filter: blur(80px); z-index: -1; opacity: 0.6; }
+        .blob-1 { top: -5%; left: -5%; width: 400px; height: 400px; background: #ffcbf2; }
+        .blob-2 { bottom: -10%; right: -5%; width: 500px; height: 500px; background: #ffb3c1; }
+        .blob-3 { top: 30%; left: 40%; width: 600px; height: 600px; background: #e2ece9; }
+
+        .container { max-width: 1600px; margin: 0 auto; display: flex; flex-direction: column; gap: 1.5rem; }
+
+        /* Modal Styles */
+        .modal-overlay { 
+            position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+            background: rgba(0,0,0,0.4); backdrop-filter: blur(4px); 
+            display: none; justify-content: center; align-items: center; z-index: 1000; 
+        }
+        .modal-content { 
+            background: white; padding: 2rem; border-radius: 20px; width: 400px; 
+            box-shadow: 0 20px 50px rgba(0,0,0,0.2); 
+        }
+        .modal-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; }
+        .recipe-row { display: grid; grid-template-columns: 1fr 100px; align-items: center; gap: 1rem; margin-bottom: 0.5rem; }
+
+        header {
+            display: flex; justify-content: space-between; align-items: center;
+            padding: 1.5rem 2rem; background: var(--glass-bg); backdrop-filter: blur(16px);
+            border-radius: 20px; border: 1px solid var(--glass-border); box-shadow: var(--shadow);
+        }
+
+        header h1 { font-size: 1.8rem; font-weight: 700; color: var(--primary); display: flex; align-items: center; gap: 0.5rem; }
+        
+        .date-picker {
+            padding: 0.6rem 1.2rem; border-radius: 12px; border: 1px solid var(--primary-light);
+            background: rgba(255,255,255,0.9); font-family: inherit; font-size: 1rem; outline: none; cursor: pointer;
+        }
+
+        /* Tabs Overlay */
+        .tabs-container {
+            display: flex; gap: 1rem; background: var(--glass-bg); padding: 0.5rem;
+            border-radius: 16px; backdrop-filter: blur(12px); border: 1px solid var(--glass-border);
+        }
+        .tab-btn {
+            flex: 1; text-align: center; padding: 1rem; border-radius: 12px; font-size: 1.1rem;
+            font-weight: 600; cursor: pointer; transition: all 0.3s; color: var(--text-light); background: transparent; border: none; font-family: inherit;
+        }
+        .tab-btn.active { background: var(--primary); color: white; box-shadow: 0 4px 15px rgba(255, 143, 163, 0.4); }
+        .tab-btn:hover:not(.active) { background: rgba(255, 255, 255, 0.5); }
+
+        .page { display: none; }
+        .page.active { display: block; animation: fadeIn 0.4s ease-out; }
+
+        /* Panels & Buttons */
+        .glass-panel {
+            background: var(--glass-bg); backdrop-filter: blur(16px);
+            border-radius: 20px; border: 1px solid var(--glass-border);
+            box-shadow: var(--shadow); padding: 1.5rem; margin-bottom: 1.5rem;
+        }
+        .panel-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; }
+        .panel-title { font-size: 1.4rem; font-weight: 600; display: flex; align-items: center; gap: 0.5rem; }
+
+        .btn {
+            padding: 0.6rem 1.2rem; border: none; border-radius: 10px; font-weight: 600;
+            cursor: pointer; display: inline-flex; align-items: center; gap: 0.5rem; transition: all 0.3s ease; font-family: inherit;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: #ff748e; transform: translateY(-2px); }
+        .btn-outline { background: transparent; border: 1px solid var(--primary); color: var(--primary); }
+        .btn-icon { padding: 0.4rem; border-radius: 6px; background: transparent; border: none; cursor: pointer; color: var(--text-light); }
+        .btn-icon:hover { color: var(--danger); background: rgba(239, 35, 60, 0.1); }
+
+        /* Table Aesthetics */
+        .table-container { overflow-x: auto; border-radius: 12px; background: rgba(255, 255, 255, 0.6); border: 1px solid var(--glass-border); max-height: 60vh; }
+        table { width: 100%; border-collapse: separate; border-spacing: 0; text-align: center; white-space: nowrap; }
+        th, td { padding: 0.6rem 0.5rem; border-bottom: 1px solid rgba(255, 143, 163, 0.2); border-right: 1px solid rgba(255, 143, 163, 0.1); vertical-align: middle; }
+        th { background: rgba(255, 255, 255, 0.9); font-weight: 600; position: sticky; top: 0; z-index: 1; }
+        .group-header { background: #ffcbf2 !important; border-bottom: 2px solid #ffb3c1; }
+        .sticky-col { position: sticky; left: 0; background: rgba(255, 255, 255, 0.95) !important; z-index: 2; border-right: 2px solid var(--primary-light); }
+        .sticky-right { position: sticky; right: 0; background: rgba(255, 255, 255, 0.95) !important; z-index: 2; border-left: 2px solid var(--primary-light); }
+        thead th.sticky-col, thead th.sticky-right { z-index: 3; }
+        tr:hover td { background: rgba(255, 255, 255, 0.8); }
+
+        /* Form Inputs */
+        input[type="number"], input[type="text"], select {
+            width: 100%; padding: 0.4rem; border: 1px solid rgba(0,0,0,0.1); border-radius: 6px;
+            background: rgba(255, 255, 255, 0.9); font-family: inherit; transition: all 0.3s;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); box-shadow: 0 0 0 2px rgba(255, 143, 163, 0.2); }
+        .qty-input { width: 50px !important; text-align: center; }
+        .amt-input { width: 80px !important; text-align: right; }
+        .name-input { width: 100px; text-align: center; font-weight: 500;}
+        .computed { font-weight: 700; color: var(--primary); }
+
+        /* Toggle Switch */
+        .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+        .toggle-switch input { opacity: 0; width: 0; height: 0; }
+        .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
+        .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
+        input:checked + .slider { background-color: var(--primary); }
+        input:checked + .slider:before { transform: translateX(20px); }
+
+        /* Dashboard Grid */
+        .dashboard { display: grid; grid-template-columns: repeat(auto-fit, minmax(320px, 1fr)); gap: 1.5rem; }
+        .summary-card { background: rgba(255, 255, 255, 0.6); border-radius: 16px; padding: 1.5rem; border: 1px solid var(--glass-border); transition: transform 0.3s; }
+        .summary-card:hover { transform: translateY(-3px); box-shadow: 0 10px 25px rgba(0,0,0,0.05); }
+        .summary-card h3 { font-size: 1.1rem; color: var(--text-dark); margin-bottom: 1rem; border-bottom: 2px solid rgba(255, 143, 163, 0.3); padding-bottom: 0.5rem; }
+        .grid-row { display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.6rem; font-size: 0.95rem; }
+        .grid-row .val { font-weight: 600; }
+        .divider { height: 1px; background: rgba(0,0,0,0.05); margin: 0.8rem 0; }
+        .text-danger { color: var(--danger); }
+        .text-success { color: var(--success); }
+
+        .mini-table { width: 100%; font-size: 0.85rem; border-collapse: collapse; }
+        .mini-table th, .mini-table td { padding: 0.4rem; border: 1px solid rgba(0,0,0,0.05); text-align: right; }
+        .mini-table th:first-child, .mini-table td:first-child { text-align: left; }
+        .mini-table th { background: rgba(255, 143, 163, 0.1); }
+
+        .mini-table th { background: rgba(255, 143, 163, 0.1); }
+
+        /* Two-Tier Nav Styles */
+        .main-nav { display: flex; gap: 0.5rem; background: rgba(0,0,0,0.05); padding: 0.4rem; border-radius: 12px; }
+        .mode-btn { padding: 0.6rem 1.5rem; border-radius: 10px; border: none; cursor: pointer; font-weight: 600; background: transparent; transition: 0.3s; color: var(--text-light); font-family: inherit; font-size: 1rem; }
+        .mode-btn.active { background: white; color: var(--primary); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+        .mode-btn:hover:not(.active) { background: rgba(255,255,255,0.4); }
+
+        @keyframes fadeIn { from { opacity: 0; transform: translateY(10px);} to { opacity: 1; transform: translateY(0);} }
+    </style>
+</head>
+<body>
+    <div class="blob blob-1"></div>
+    <div class="blob blob-2"></div>
+    <div class="blob blob-3"></div>
+
+    <div class="container">
+        <!-- Header & Top Level Nav -->
+        <header>
+            <div style="display:flex; flex-direction:column; gap:0.2rem">
+                <h1 style="font-size: 1.5rem; color:var(--text-light); opacity:0.8">甜點店營運系統</h1>
+                <div class="main-nav">
+                    <button class="mode-btn active" id="mode-daily" onclick="switchMode('daily')"><i class="fa-solid fa-calendar-day"></i> 日報表模式</button>
+                    <button class="mode-btn" id="mode-monthly" onclick="switchMode('monthly')"><i class="fa-solid fa-calendar-month"></i> 月報表模式</button>
+                </div>
+            </div>
+            <input type="date" class="date-picker" id="reportDate">
+        </header>
+
+        <!-- Sub Tabs (Only for Daily Mode) -->
+        <div class="tabs-container" id="daily-nav">
+            <button class="tab-btn active" data-tab="dashboard" onclick="switchTab('dashboard')"><i class="fa-solid fa-chart-line"></i> 報表輸入與戰情室</button>
+            <button class="tab-btn" data-tab="import" onclick="switchTab('import')"><i class="fa-solid fa-file-import"></i> 訂單匯入(Excel)</button>
+            <button class="tab-btn" data-tab="settings" onclick="switchTab('settings')"><i class="fa-solid fa-sliders"></i> 販售品項與價格設定</button>
+        </div>
+
+        <!-- PAGE 1: Dashboard -->
+        <div id="page-dashboard" class="page active">
+            <!-- Sales Matrix -->
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-list-check"></i> 銷售明細</h2>
+                    <button class="btn btn-primary" onclick="addOrder()"><i class="fa-solid fa-plus"></i> 新增訂單</button>
+                </div>
+                <div class="table-container">
+                    <table id="salesTable">
+                        <thead>
+                            <!-- Generated Dynamically -->
+                        </thead>
+                        <tbody id="salesBody">
+                            <!-- Generated Dynamically -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Summary Dashboard -->
+            <div class="glass-panel dashboard">
+                <!-- 金流 -->
+                <div class="summary-card">
+                    <h3><i class="fa-solid fa-sack-dollar"></i> 金流總結</h3>
+                    <div class="grid-row"><span>商品營業總額</span> <span class="val" id="sum-rev">0</span></div>
+                    <div class="grid-row"><span>運費</span> <span class="val" id="sum-ship">0</span></div>
+                    <div class="grid-row"><span>折讓</span> <span class="val text-danger" id="sum-disc">0</span></div>
+                    <div class="grid-row"><span>公關品折算總額</span> <span class="val" id="sum-pr">0</span></div>
+                    <div class="divider"></div>
+                    <div class="grid-row"><span>營業淨額</span> <span class="val" id="sum-net" style="font-weight: 500;">0</span></div>
+                    <div class="grid-row"><span>應收總額</span> <span class="val computed" id="sum-receivable" style="font-size: 1.2rem;">0</span></div>
+                    <div class="grid-row"><span>實收總額</span> <input type="number" class="amt-input" id="sum-actual-input" style="font-size: 1.1rem; color:var(--success); width:120px !important;"></div>
+                    <div class="divider"></div>
+                    <div class="grid-row"><span>已收-匯款</span> <span class="val" id="sum-remit">0</span></div>
+                    <div class="grid-row"><span>已收-現金</span> <span class="val" id="sum-cash">0</span></div>
+                    <div class="grid-row"><span>今日未結帳款</span> <span class="val text-danger" id="sum-unpaid">0</span></div>
+                </div>
+
+                <!-- 應收帳款管理 -->
+                <div class="summary-card">
+                    <h3><i class="fa-solid fa-file-invoice-dollar"></i> 前期應收帳款管理</h3>
+                    <div class="grid-row">
+                        <span>累積前期未結</span> 
+                        <input type="number" id="ar-accum" class="amt-input ar-in" data-field="accum" value="0" onclick="this.select()">
+                    </div>
+                    <div class="grid-row"><span>今日新增未結</span> <span class="val" id="ar-today">0</span></div>
+                    <div class="divider"></div>
+                    <div class="grid-row">
+                        <span>今日回款 (沖銷)</span> 
+                        <input type="number" id="ar-collect" class="amt-input ar-in" data-field="collect" value="0" onclick="this.select()">
+                    </div>
+                    <div class="divider"></div>
+                    <div class="grid-row" style="font-size: 1.1rem; margin-top: auto;">
+                        <span>剩餘總未結帳款</span> 
+                        <span class="val text-danger" id="ar-remain" style="font-weight:700">0</span>
+                    </div>
+                </div>
+
+                <!-- 物流與包材 -->
+                <div class="summary-card">
+                    <h3><i class="fa-solid fa-truck-fast"></i> 物流分析與包材</h3>
+                    <div class="grid-row"><span>運費實收 (明細)</span> <span class="val" id="log-collect">0</span></div>
+                    <div class="grid-row"><span>公關品運費 (不計入)</span> <span class="val text-danger" id="log-pr-ship">0</span></div>
+                    <div class="grid-row">
+                        <span>運費實支 (支出)</span> 
+                        <input type="number" id="log-spent" class="amt-input ar-in" data-field="logSpent" value="0" onclick="this.select()">
+                    </div>
+                    <div class="grid-row"><span>物流服務額</span> <span class="val" id="log-diff">0</span></div>
+                    
+                    <div class="divider" style="margin: 1rem 0;"></div>
+
+                    <h4 style="margin-bottom: 0.5rem; color: var(--text-light); font-size: 0.9rem;"><i class="fa-solid fa-box-open"></i> 包材計算</h4>
+                    <table class="mini-table">
+                        <thead style="background: rgba(131, 197, 190, 0.1);">
+                            <tr><th>包材</th><th>單價</th><th>數量</th><th>小計</th></tr>
+                        </thead>
+                        <tbody id="tbl-pkg-usage"></tbody>
+                        <tfoot>
+                            <tr><td colspan="3" style="text-align:right">包材總支出:</td><td id="pkg-total-cost" class="val text-danger" style="font-weight:bold">0</td></tr>
+                        </tfoot>
+                    </table>
+                </div>
+
+                <!-- 銷售量與庫存 -->
+                <div class="summary-card" style="grid-column: 1 / -1;">
+                    <h3><i class="fa-solid fa-chart-bar"></i> 動態商情與庫存分析</h3>
+                    
+                    <!-- Sales Breakdown Row -->
+                    <div style="display: flex; gap: 1.5rem; flex-wrap: wrap; margin-bottom: 2rem;">
+                        <div style="flex: 1; min-width: 250px;">
+                            <h4 style="margin-bottom: 0.5rem; color: var(--text-light); font-size: 0.9rem;">禮盒銷售統計</h4>
+                            <table class="mini-table"><thead><tr><th>品項</th><th>販售</th><th>公關</th><th>總數</th></tr></thead><tbody id="tbl-sales-gb"></tbody></table>
+                        </div>
+                        <div style="flex: 1; min-width: 250px;">
+                            <h4 style="margin-bottom: 0.5rem; color: var(--text-light); font-size: 0.9rem;">單顆銷售統計</h4>
+                            <table class="mini-table"><thead><tr><th>品項</th><th>販售</th><th>公關</th><th>總數</th></tr></thead><tbody id="tbl-sales-sg"></tbody></table>
+                        </div>
+                    </div>
+
+                    <!-- Inventory Section -->
+                    <div style="width: 100%;">
+                        <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 0.5rem;">
+                            <h4 style="color: var(--text-light); font-size: 0.9rem;">單一口味產能庫存推算</h4>
+                            <span style="font-size: 0.75rem; color: var(--text-light); opacity: 0.8;">* 「出貨總量」 = 單顆賣出 + 特定口味禮盒賣出 + (綜合禮盒數量 × 1)</span>
+                        </div>
+                        <table class="mini-table">
+                            <thead style="background: rgba(131, 197, 190, 0.2);">
+                                <tr><th>口味</th><th>原庫存</th><th>預產量</th><th>實產量</th><th>耗損</th><th>出貨總量</th><th>結存</th><th>損耗率</th></tr>
+                            </thead>
+                            <tbody id="tbl-inventory"></tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- 耗損紀錄簿 -->
+                <div class="summary-card" style="grid-column: 1 / -1;">
+                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+                        <h3><i class="fa-solid fa-dumpster"></i> 耗損紀錄簿</h3>
+                        <button class="btn-primary" style="padding: 0.4rem 1rem; font-size: 0.8rem;" onclick="addLossEntry()"><i class="fa-solid fa-plus"></i> 新增耗損</button>
+                    </div>
+                    <table class="mini-table">
+                        <thead style="background: rgba(255, 143, 163, 0.1);">
+                            <tr>
+                                <th>品項口味</th>
+                                <th>數量</th>
+                                <th>耗損類別</th>
+                                <th>詳細備註</th>
+                                <th style="width: 50px;">操作</th>
+                            </tr>
+                        </thead>
+                        <tbody id="lossLogBody"></tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 2: Import -->
+        <div id="page-import" class="page">
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-file-import"></i> 訂單匯入</h2>
+                    <div>
+                        <button class="btn btn-outline" onclick="document.getElementById('importText').value=''; renderImportPreview([])">清空</button>
+                        <button class="btn btn-primary" onclick="processImport()"><i class="fa-solid fa-wand-magic-sparkles"></i> 解析資料</button>
+                    </div>
+                </div>
+                
+                <textarea id="importText" placeholder="在此貼上 Google 表單或 Excel 複製來的整列資料..." style="width: 100%; height: 120px; border-radius: 12px; border: 1px solid var(--glass-border); padding: 1rem; font-family: monospace; font-size: 0.8rem; background: rgba(255,255,255,0.5); outline: none;"></textarea>
+
+                <div id="importPreviewArea" style="margin-top: 1.5rem; display: none; padding: 1rem; background: rgba(131, 197, 190, 0.1); border-radius: 12px;">
+                    <div class="panel-header">
+                        <h3 style="font-size: 1rem; color: var(--primary);">▼ 待匯入預覽</h3>
+                        <button class="btn btn-primary" style="padding: 0.4rem 1rem; font-size: 0.85rem;" onclick="confirmImport()">確認匯入以上資料</button>
+                    </div>
+                    <div class="table-container">
+                        <table id="tbl-import-preview">
+                            <thead><tr><th>日期</th><th>訂購人</th><th>電話</th><th>項目</th><th>總額</th></tr></thead>
+                            <tbody id="importPreviewBody"></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- 當週訂購名單 -->
+            <div class="glass-panel" style="background:transparent; border:none; box-shadow:none; padding:0">
+                <div class="panel-header" style="background: var(--glass-bg); padding:1rem; border-radius:16px; border:1px solid var(--glass-border); margin-bottom:1rem">
+                    <h2 class="panel-title"><i class="fa-solid fa-calendar-week"></i> 當週訂購名單 (依日期分組)</h2>
+                    <span id="weekly-date-range" style="font-size: 0.9rem; color: var(--text-light);"></span>
+                </div>
+                <div id="weeklyOrdersGrid" class="dashboard">
+                    <!-- Cards generated dynamically -->
+                </div>
+            </div>
+        </div>
+
+        <!-- PAGE 3: Monthly Report -->
+        <div id="page-monthly" class="page">
+            <div class="glass-panel" style="display:flex; justify-content: space-between; align-items: center;">
+                <h2 class="panel-title"><i class="fa-solid fa-calendar-days"></i> <span id="monthly-title-text">月報表</span></h2>
+                <input type="month" id="monthly-picker" class="date-picker" onchange="loadMonthlyReport()">
+            </div>
+
+            <!-- Top Performance Summary -->
+            <div class="dashboard" style="margin-bottom: 1.5rem;">
+                <div class="summary-card" style="text-align: center;">
+                    <div style="background:#fefae0; padding:0.5rem; border-radius:8px; margin-bottom:0.5rem; font-weight:600">營業額</div>
+                    <div id="m-sum-rev" style="font-size: 2rem; font-weight:700">0</div>
+                </div>
+                <div class="summary-card" style="text-align: center;">
+                    <div style="background:#faedcd; padding:0.5rem; border-radius:8px; margin-bottom:0.5rem; font-weight:600">- 變動成本</div>
+                    <div id="m-sum-var" style="font-size: 2rem; font-weight:700" class="text-danger">0</div>
+                </div>
+                <div class="summary-card" style="text-align: center;">
+                    <div style="background:#e9edc9; padding:0.5rem; border-radius:8px; margin-bottom:0.5rem; font-weight:600">- 固定成本</div>
+                    <div id="m-sum-fix" style="font-size: 2rem; font-weight:700">0</div>
+                </div>
+                <div class="summary-card" style="text-align: center; border: 2px solid var(--primary);">
+                    <div style="background:var(--primary); color:white; padding:0.5rem; border-radius:8px; margin-bottom:0.5rem; font-weight:600">= 本月淨利</div>
+                    <div id="m-sum-profit" style="font-size: 2rem; font-weight:700; color:var(--primary)">0</div>
+                </div>
+            </div>
+
+            <div style="display: grid; grid-template-columns: 1fr 1.2fr; gap: 1.5rem;">
+                <!-- Left Column: Financial Details -->
+                <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <div class="glass-panel">
+                        <h3 style="background:#bc6c25; color:white; padding:0.6rem; text-align:center; border-radius:8px; margin-bottom:1rem">財務月報表</h3>
+                        <table class="mini-table">
+                            <thead style="background:#fefae0"><tr><th colspan="2">營收概況</th><th colspan="2">金流</th></tr></thead>
+                            <tbody>
+                                <tr><td>本月營業總額</td><td class="val" id="m-rev-total">0</td><td>匯款</td><td class="val" id="m-cash-remit">0</td></tr>
+                                <tr><td>獲客成本(折讓+公關)</td><td class="val text-danger" id="m-rev-cac">0</td><td>現金</td><td class="val" id="m-cash-spot">0</td></tr>
+                                <tr><td>本月營業淨額</td><td id="m-rev-net" style="font-size:1.5rem; font-weight:700; text-align:center" colspan="2">0</td><td>應收帳款</td><td class="val text-danger" id="m-cash-ar">0</td></tr>
+                            </tbody>
+                        </table>
+                        
+                        <h4 style="margin: 1.5rem 0 0.5rem; color:#bc6c25">營業變動成本</h4>
+                        <table class="mini-table">
+                            <thead style="background:#faedcd"><tr><th>項目</th><th>本月使用/銷售</th><th>本月成本</th></tr></thead>
+                            <tbody id="m-var-body"></tbody>
+                            <tfoot><tr style="background:#faedcd; font-weight:700"><td>變動成本小計</td><td colspan="2" id="m-var-subtotal" style="text-align:right">0</td></tr></tfoot>
+                        </table>
+                    </div>
+
+                    <div class="glass-panel">
+                        <h3 style="background:#588157; color:white; padding:0.6rem; text-align:center; border-radius:8px; margin-bottom:1rem">固定支出與行銷</h3>
+                        <table class="mini-table">
+                            <thead><tr><th>項目</th><th>金額 (手動)</th><th>項目</th><th>金額 (手動)</th></tr></thead>
+                            <tbody id="m-fix-body">
+                                <tr><td>店鋪房租</td><td><input type="number" class="amt-input m-fix" data-key="rent"></td><td>設備維修</td><td><input type="number" class="amt-input m-fix" data-key="maint"></td></tr>
+                                <tr><td>水電雜支</td><td><input type="number" class="amt-input m-fix" data-key="util"></td><td>會計/雜項</td><td><input type="number" class="amt-input m-fix" data-key="misc"></td></tr>
+                                <tr><td>人事費用</td><td><input type="number" class="amt-input m-fix" data-key="staff"></td><td>行銷廣告</td><td><input type="number" class="amt-input m-fix" data-key="ads"></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Right Column: Product Breakdown -->
+                <div style="display:flex; flex-direction:column; gap:1.5rem;">
+                    <div class="glass-panel">
+                        <h3 style="background:#283618; color:white; padding:0.6rem; text-align:center; border-radius:8px; margin-bottom:1rem">產品數據月報表</h3>
+                        <table class="mini-table">
+                            <thead><tr><th>產品類別</th><th>銷售量</th><th>售價</th><th>營業額</th><th>毛利</th></tr></thead>
+                            <tbody id="m-prod-body"></tbody>
+                        </table>
+                    </div>
+
+                    <div class="glass-panel">
+                        <h3 style="background:#606c38; color:white; padding:0.6rem; text-align:center; border-radius:8px; margin-bottom:1rem">耗損類別分析</h3>
+                        <table class="mini-table">
+                            <thead><tr><th>口味</th><th>人為</th><th>技術</th><th>過期</th><th>吃掉</th><th>總量</th></tr></thead>
+                            <tbody id="m-loss-body"></tbody>
+                        </table>
+                    </div>
+                </div>
+        </div>
+    </div>
+        <!-- PAGE 4: Settings (Daily) -->
+        <div id="page-settings" class="page">
+            <div class="glass-panel" style="display:flex; justify-content: space-between; align-items: center;">
+                <h2 class="panel-title"><i class="fa-solid fa-gears"></i> 品項與價格全域設定</h2>
+                <button class="btn btn-outline" onclick="renderSettings(); alert('已強制重整品項資料')"><i class="fa-solid fa-sync"></i> 強制刷新</button>
+            </div>
+
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-gift"></i> 禮盒品項設定</h2>
+                    <button class="btn btn-outline" onclick="addSettingItem('gb')"><i class="fa-solid fa-plus"></i> 新增禮盒</button>
+                </div>
+                <table class="mini-table" style="text-align: center;">
+                    <thead><tr><th>今日上架 (顯示於明細)</th><th>品項名稱</th><th>預設商品單價</th><th>內容配方</th><th>移除</th></tr></thead>
+                    <tbody id="setting-gb-body"></tbody>
+                </table>
+            </div>
+
+            <!-- Recipe Modal -->
+            <div id="recipeModal" class="modal-overlay">
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h3 id="modalTitle">設定禮盒配方</h3>
+                        <button class="btn-icon" onclick="closeRecipeModal()"><i class="fa-solid fa-times"></i></button>
+                    </div>
+                    <div id="recipeItems"></div>
+                    <div style="margin-top: 1.5rem; text-align: right;">
+                        <button class="btn btn-primary" onclick="closeRecipeModal()">確定</button>
+                    </div>
+                </div>
+            </div>
+
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-cookie"></i> 單顆品項設定</h2>
+                    <button class="btn btn-outline" onclick="addSettingItem('sg')"><i class="fa-solid fa-plus"></i> 新增單顆</button>
+                </div>
+                <table class="mini-table" style="text-align: center;">
+                    <thead><tr><th>今日上架 (顯示於明細)</th><th>品項名稱</th><th>預設商品單價</th><th>移除</th></tr></thead>
+                    <tbody id="setting-sg-body"></tbody>
+                </table>
+            </div>
+
+            <div class="glass-panel">
+                <div class="panel-header">
+                    <h2 class="panel-title"><i class="fa-solid fa-box-open"></i> 物流包材設定</h2>
+                    <button class="btn btn-outline" onclick="addSettingItem('pkg')"><i class="fa-solid fa-plus"></i> 新增包材</button>
+                </div>
+                <table class="mini-table" style="text-align: center;">
+                    <thead><tr><th>今日上架</th><th>包材名稱</th><th>預設單價</th><th>移除</th></tr></thead>
+                    <tbody id="setting-pkg-body"></tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ---- APPLICATION STATE & PERSISTENCE ----
+        function generateId() { return 'id_' + Math.random().toString(36).substr(2, 9); }
+
+        const STORAGE_KEY_PREFIX = 'dessert_shop_';
+        const SETTINGS_KEY = STORAGE_KEY_PREFIX + 'settings';
+        const DATA_KEY = STORAGE_KEY_PREFIX + 'daily_data';
+
+        let AppState = {
+            currentDate: '', // ISO string YYYY-MM-DD
+            settings: {
+                gb: [
+                    { id: generateId(), name: '綜合', price: 1080, active: true, recipe: {} },
+                    { id: generateId(), name: '原味', price: 360, active: true, recipe: {} },
+                    { id: generateId(), name: '可可', price: 360, active: true, recipe: {} },
+                    { id: generateId(), name: '伯爵', price: 360, active: true, recipe: {} },
+                    { id: generateId(), name: '抹茶', price: 360, active: true, recipe: {} }
+                ],
+                sg: [
+                    { id: generateId(), name: '原味', price: 120, active: true },
+                    { id: generateId(), name: '可可', price: 120, active: true },
+                    { id: generateId(), name: '伯爵', price: 120, active: true },
+                    { id: generateId(), name: '抹茶', price: 120, active: true }
+                ],
+                pkg: [
+                    { id: generateId(), name: '手提袋', price: 10, active: true },
+                    { id: generateId(), name: '宅配紙箱', price: 15, active: true }
+                ]
+            },
+            // The following belong to the "current day" view
+            orders: [],
+            inventoryState: {},
+            ar: { accum: 0, collect: 0, logSpent: 0, actualTotal: 0 },
+            lossLog: [],
+            pkgUsage: {} // { pkgId: qty }
+        };
+
+        // Load Global Settings
+        function loadSettings() {
+            const saved = localStorage.getItem(SETTINGS_KEY);
+            if (saved) {
+                try {
+                    const parsed = JSON.parse(saved);
+                    // Deep merge to ensure all categories exist
+                    if (parsed.gb) AppState.settings.gb = parsed.gb;
+                    if (parsed.sg) AppState.settings.sg = parsed.sg;
+                    if (parsed.pkg) AppState.settings.pkg = parsed.pkg;
+                } catch(e) { 
+                    console.error("Failed to load settings, using defaults", e); 
+                    saveSettings(); // Reset to defaults if corrupted
+                }
+            } else {
+                saveSettings(); // Save defaults for first run
+            }
+        }
+
+        function saveSettings() {
+            localStorage.setItem(SETTINGS_KEY, JSON.stringify(AppState.settings));
+        }
+
+        // Daily Data Management
+        function getDailyDataStore() {
+            const saved = localStorage.getItem(DATA_KEY);
+            return saved ? JSON.parse(saved) : {};
+        }
+
+        function saveDailyData() {
+            if (!AppState.currentDate) return;
+            const allData = getDailyDataStore();
+            allData[AppState.currentDate] = {
+                orders: AppState.orders,
+                inventoryState: AppState.inventoryState,
+                ar: AppState.ar,
+                lossLog: AppState.lossLog,
+                pkgUsage: AppState.pkgUsage
+            };
+            localStorage.setItem(DATA_KEY, JSON.stringify(allData));
+        }
+
+        function loadDailyData(date) {
+            AppState.currentDate = date;
+            const allData = getDailyDataStore();
+            const dayData = allData[date];
+
+            // Helper to get previous day's key safely
+            const [y, m, d] = date.split('-').map(Number);
+            const dObj = new Date(y, m - 1, d);
+            dObj.setDate(dObj.getDate() - 1);
+            const yKey = `${dObj.getFullYear()}-${String(dObj.getMonth() + 1).padStart(2, '0')}-${String(dObj.getDate()).padStart(2, '0')}`;
+            const yData = allData[yKey];
+
+            let prevInventory = {};
+            let prevUnpaidTotal = 0;
+
+            const allFlavors = Array.from(new Set([
+                ...AppState.settings.gb.map(i => i.name),
+                ...AppState.settings.sg.map(i => i.name)
+            ])).filter(n => n !== '綜合');
+
+            if (yData) {
+                // Calculate Yesterday's Ending Unpaid
+                const yUnpaidToday = (yData.orders || []).reduce((sum, o) => o.status === '未結帳款' ? sum + o.actualAmt : sum, 0);
+                prevUnpaidTotal = (yData.ar?.accum || 0) + yUnpaidToday - (yData.ar?.collect || 0);
+
+                // Calculate Yesterday's Ending Inventory
+                const mixItem = AppState.settings.gb.find(i => i.name === '綜合');
+                const yMixQty = (yData.orders || []).reduce((sum, o) => sum + (mixItem ? (o.items[mixItem.id] || 0) : 0), 0);
+
+                allFlavors.forEach(f => {
+                    const s = yData.inventoryState?.[f] || { org: 0, act: 0, los: 0 };
+                    const soldQty = (yData.orders || []).reduce((sum, o) => {
+                        const itemsWithFlavor = [...AppState.settings.gb, ...AppState.settings.sg].filter(i => i.name === f);
+                        return sum + itemsWithFlavor.reduce((isum, item) => isum + (o.items[item.id] || 0), 0);
+                    }, 0);
+                    prevInventory[f] = s.org + s.act - s.los - (soldQty + yMixQty);
+                });
+            }
+
+            // Sync AppState with dayData or fresh init
+            if (dayData) {
+                AppState.orders = dayData.orders || [newOrder()];
+                AppState.inventoryState = dayData.inventoryState || {};
+                AppState.ar = dayData.ar || { accum: 0, collect: 0, logSpent: 0, actualTotal: 0 };
+                AppState.lossLog = dayData.lossLog || [];
+                AppState.pkgUsage = dayData.pkgUsage || {};
+            } else {
+                AppState.orders = [newOrder()];
+                AppState.inventoryState = {};
+                AppState.ar = { accum: 0, collect: 0, logSpent: 0, actualTotal: 0 };
+                AppState.lossLog = [];
+                AppState.pkgUsage = {};
+            }
+
+            // ALWAYS override Original Stock and Accumulated Unpaid if yesterday exists
+            if (yData) {
+                AppState.ar.accum = prevUnpaidTotal;
+                allFlavors.forEach(f => {
+                    if (!AppState.inventoryState[f]) AppState.inventoryState[f] = { org: 0, act: 0, los: 0 };
+                    AppState.inventoryState[f].org = prevInventory[f] || 0;
+                });
+            }
+            
+            // Push changes back to UI
+            document.getElementById('ar-accum').value = AppState.ar.accum;
+            document.getElementById('ar-collect').value = AppState.ar.collect;
+            document.getElementById('log-spent').value = AppState.ar.logSpent;
+            document.getElementById('sum-actual-input').value = AppState.ar.actualTotal || 0;
+
+            fullRenderDashboard();
+        }
+
+        function newOrder() {
+            return {
+                id: generateId(), buyer: '', items: {}, 
+                prodAmt: 0, shipAmt: 0, discAmt: 0, actualAmt: 0, 
+                status: '匯款', notes: ''
+            };
+        }
+
+        // Initialize App
+        window.addEventListener('load', () => {
+            const dateInput = document.getElementById('reportDate');
+            if(!dateInput.value) dateInput.valueAsDate = new Date();
+            loadSettings();
+            loadMonthlySettings();
+            loadDailyData(dateInput.value);
+            switchMode('daily'); // Set initial mode
+        });
+
+        // Date Change event
+        document.getElementById('reportDate').addEventListener('change', (e) => {
+            saveDailyData();
+            loadDailyData(e.target.value);
+        });
+
+        // ---- CORE LOGIC & RENDERERS ----
+
+        function switchMode(mode) {
+            document.querySelectorAll('.mode-btn').forEach(b => b.classList.remove('active'));
+            const btn = document.getElementById('mode-' + mode);
+            if(btn) btn.classList.add('active');
+            
+            const dailyNav = document.getElementById('daily-nav');
+            const datePicker = document.getElementById('reportDate');
+            
+            if (mode === 'daily') {
+                if(dailyNav) dailyNav.style.display = 'flex';
+                if(datePicker) datePicker.style.visibility = 'visible';
+                switchTab('dashboard');
+            } else {
+                if(dailyNav) dailyNav.style.display = 'none';
+                if(datePicker) datePicker.style.visibility = 'hidden';
+                switchTab('monthly');
+            }
+        }
+
+        function switchTab(tabId) {
+            // Hide all pages
+            document.querySelectorAll('.page').forEach(page => page.classList.remove('active'));
+            
+            // Handle Monthly independently
+            if (tabId === 'monthly') {
+                document.getElementById('page-monthly').classList.add('active');
+                loadMonthlyReport();
+                return;
+            }
+
+            // Handle Daily Sub-tabs
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            const activeBtn = document.querySelector(`.tab-btn[data-tab="${tabId}"]`);
+            if (activeBtn) activeBtn.classList.add('active');
+            
+            const pageMap = {
+                'dashboard': 'page-dashboard',
+                'import': 'page-import',
+                'settings': 'page-settings'
+            };
+            
+            Object.values(pageMap).forEach(id => {
+                const p = document.getElementById(id);
+                if(p) p.classList.remove('active');
+            });
+
+            const targetPage = document.getElementById(pageMap[tabId]);
+            if (targetPage) {
+                targetPage.classList.add('active');
+                if (tabId === 'dashboard') fullRenderDashboard();
+                if (tabId === 'import') renderWeeklyView();
+                if (tabId === 'settings') renderSettings();
+            }
+        }
+
+        // ---- IMPORT LOGIC ----
+        let parsedOrders = [];
+
+        function renderWeeklyView() {
+            if(!AppState.currentDate) return;
+            const grid = document.getElementById('weeklyOrdersGrid');
+            const rangeSpan = document.getElementById('weekly-date-range');
+            if(!grid) return;
+            
+            const [y, m, d] = AppState.currentDate.split('-').map(Number);
+            const selDate = new Date(y, m - 1, d);
+            const day = selDate.getDay();
+            const diffToMon = (day === 0 ? -6 : 1 - day);
+            const monday = new Date(selDate);
+            monday.setDate(selDate.getDate() + diffToMon);
+            
+            const fmt = (date) => `${date.getFullYear()}-${String(date.getMonth()+1).padStart(2,'0')}-${String(date.getDate()).padStart(2,'0')}`;
+            
+            const sunday = new Date(monday); 
+            sunday.setDate(monday.getDate() + 6);
+            rangeSpan.textContent = `${fmt(monday)} 至 ${fmt(sunday)}`;
+
+            const allData = getDailyDataStore();
+            let html = '';
+            
+            for(let i=0; i<7; i++) {
+                const cur = new Date(monday);
+                cur.setDate(monday.getDate() + i);
+                const k = fmt(cur);
+                const data = allData[k];
+                
+                if(data && data.orders && data.orders.length > 0) {
+                    const validOrders = data.orders.filter(o => o.buyer.trim() || o.actualAmt > 0);
+                    if(validOrders.length > 0) {
+                        html += `
+                            <div class="summary-card" style="min-height: 200px; display: flex; flex-direction: column;">
+                                <h3 style="margin-bottom: 0.8rem;"><i class="fa-solid fa-calendar-day"></i> ${k}</h3>
+                                <div style="flex: 1; overflow-y: auto;">
+                                    <table class="mini-table" style="font-size: 0.85rem;">
+                                        <thead>
+                                            <tr><th style="text-align:left">訂購人</th><th>電話</th><th>金額</th><th>地址/備註</th></tr>
+                                        </thead>
+                                        <tbody>
+                                            ${validOrders.map(o => {
+                                                let phone = '', addr = o.notes;
+                                                if(o.notes.includes('|')) {
+                                                    [phone, addr] = o.notes.split('|').map(s=>s.trim());
+                                                }
+                                                return `
+                                                    <tr>
+                                                        <td style="text-align:left; font-weight:600">${o.buyer}</td>
+                                                        <td style="font-size:0.75rem">
+                                                            ${phone} 
+                                                            ${phone ? `<button class="btn-icon" style="padding:2px" onclick="copyText('${phone}', this)" title="複製電話"><i class="fa-solid fa-copy"></i></button>` : ''}
+                                                        </td>
+                                                        <td style="font-weight:700">$${o.actualAmt.toLocaleString()}</td>
+                                                        <td style="text-align:left; font-size:0.75rem; color:#666; max-width:150px; overflow:hidden; text-overflow:ellipsis;" title="${addr}">${addr}</td>
+                                                    </tr>
+                                                `;
+                                            }).join('')}
+                                        </tbody>
+                                    </table>
+                                </div>
+                                <div style="margin-top: 0.8rem; font-size: 0.8rem; text-align: right; color: var(--primary);">
+                                    共 ${validOrders.length} 筆訂單
+                                </div>
+                            </div>
+                        `;
+                    }
+                }
+            }
+            grid.innerHTML = html || '<div style="grid-column: 1/-1; text-align:center; padding:4rem; background:rgba(255,255,255,0.4); border-radius:16px;">本週尚無任何訂單紀錄</div>';
+        }
+
+        function copyText(text, btn) {
+            navigator.clipboard.writeText(text).then(() => {
+                const icon = btn.querySelector('i');
+                const oldClass = icon.className;
+                icon.className = 'fa-solid fa-check';
+                btn.style.color = 'var(--success)';
+                setTimeout(() => {
+                    icon.className = oldClass;
+                    btn.style.color = '';
+                }, 1500);
+            });
+        }
+
+        function processImport() {
+            const raw = document.getElementById('importText').value.trim();
+            if(!raw) return alert("請貼上資料");
+            
+            const rows = raw.split('\n').map(r => r.split('\t'));
+            if(rows.length < 2) return alert("資料格式不正確 (需包含標題列)");
+            
+            const headers = rows[0].map(h => h.trim());
+            const dataRows = rows.slice(1);
+            
+            // Identify key column indices
+            const getIdx = (keywords) => headers.findIndex(h => keywords.some(k => h.includes(k)));
+            
+            const idxBuyer = getIdx(['訂購人姓名', '姓名']);
+            const idxPhone = getIdx(['訂購人電話', '電話']);
+            const idxAddr = getIdx(['宅配地址', '地址']);
+            const idxStoreDate = getIdx(['預約取貨日期', '店取']);
+            const idxShipDate = getIdx(['宅配出貨日', '出貨']);
+            const idxMethod = getIdx(['取貨方式']);
+            
+            // Map columns in the spreadsheet to items in settings
+            const itemMap = []; // { item, colIdx }
+            headers.forEach((h, colIdx) => {
+                const isGBHeader = h.includes('禮盒');
+                const isSGHeader = h.includes('單顆');
+                
+                let bestMatch = null;
+                // Priority 1: If header explicitly specifies type
+                if(isGBHeader) {
+                    bestMatch = AppState.settings.gb.find(i => h.includes(i.name));
+                } else if(isSGHeader) {
+                    bestMatch = AppState.settings.sg.find(i => h.includes(i.name));
+                } else {
+                    // Priority 2: Generic match - most forms use GB as main columns
+                    bestMatch = AppState.settings.gb.find(i => h.includes(i.name)) || 
+                                AppState.settings.sg.find(i => h.includes(i.name));
+                }
+
+                if(bestMatch) {
+                    itemMap.push({ item: bestMatch, colIdx });
+                }
+            });
+            
+            parsedOrders = [];
+            dataRows.forEach(row => {
+                const method = idxMethod !== -1 ? row[idxMethod] : '';
+                let targetDate = '';
+                if(method && method.includes('到店自取')) {
+                    targetDate = idxStoreDate !== -1 ? row[idxStoreDate] : '';
+                } else if(method && method.includes('宅配')) {
+                    targetDate = idxShipDate !== -1 ? row[idxShipDate] : '';
+                } else {
+                    targetDate = (idxStoreDate !== -1 && row[idxStoreDate]) || (idxShipDate !== -1 && row[idxShipDate]) || '';
+                }
+                
+                if(!targetDate) return;
+
+                const buyer = idxBuyer !== -1 ? row[idxBuyer] : '未知';
+                const phone = idxPhone !== -1 ? row[idxPhone] : '';
+                const addr = idxAddr !== -1 ? row[idxAddr] : '';
+                
+                const items = {};
+                let prodAmt = 0;
+                itemMap.forEach(m => {
+                    const val = row[m.colIdx];
+                    if(val) {
+                        // Extract number from strings like "1 份 360 元" or just "1"
+                        const match = val.match(/(\d+)/);
+                        if(match) {
+                            const qty = parseInt(match[1]);
+                            if(qty > 0) {
+                                items[m.item.id] = qty;
+                                prodAmt += qty * m.item.price;
+                            }
+                        }
+                    }
+                });
+                
+                if(Object.keys(items).length > 0) {
+                    parsedOrders.push({
+                        date: targetDate.trim().replace(/\//g, '-'), // Normalize to YYYY-MM-DD
+                        buyer, phone, addr, items, prodAmt
+                    });
+                }
+            });
+            
+            renderImportPreview(parsedOrders);
+        }
+
+        function renderImportPreview(orders) {
+            const area = document.getElementById('importPreviewArea');
+            const tbody = document.getElementById('importPreviewBody');
+            tbody.innerHTML = '';
+            
+            if(orders.length === 0) {
+                area.style.display = 'none';
+                return;
+            }
+            
+            orders.forEach(o => {
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${o.date}</td>
+                        <td>${o.buyer}</td>
+                        <td>${o.phone}</td>
+                        <td style="text-align:left">${Object.keys(o.items).length} 項品項</td>
+                        <td>$${o.prodAmt.toLocaleString()}</td>
+                        <td style="max-width:200px; overflow:hidden; text-overflow:ellipsis;">${o.addr}</td>
+                    </tr>
+                `;
+            });
+            area.style.display = 'block';
+        }
+
+        function confirmImport() {
+            if(!confirm(`確定要匯入這 ${parsedOrders.length} 筆訂單嗎？\n這可能會覆蓋或新增到現有日期的資料中。`)) return;
+            
+            const allData = getDailyDataStore();
+            
+            parsedOrders.forEach(po => {
+                if(!allData[po.date]) {
+                    allData[po.date] = { orders: [], inventoryState: {}, ar: { accum:0, collect:0, logSpent:0 }, lossLog: [], pkgUsage: {} };
+                }
+                
+                const daily = allData[po.date];
+                // Check if already exists (basic deduplication by buyer and items hash?)
+                // For now, just append as requested
+                daily.orders.push({
+                    id: generateId(),
+                    buyer: po.buyer,
+                    items: po.items,
+                    prodAmt: po.prodAmt,
+                    shipAmt: 0, 
+                    discAmt: 0,
+                    actualAmt: po.prodAmt,
+                    status: '匯款', // Default
+                    notes: `${po.phone} | ${po.addr}`.trim()
+                });
+            });
+            
+            localStorage.setItem(DATA_KEY, JSON.stringify(allData));
+            alert("匯入成功！");
+            document.getElementById('importText').value = '';
+            renderImportPreview([]);
+            renderWeeklyView();
+            
+            // Refresh dashboard if current date was affected
+            if(parsedOrders.some(o => o.date === AppState.currentDate)) {
+                loadDailyData(AppState.currentDate);
+            }
+        }
+
+        function renderSettings() {
+            console.log("Entering renderSettings()...");
+            ['gb', 'sg', 'pkg'].forEach(type => {
+                const tbody = document.getElementById(`setting-${type}-body`);
+                if (!tbody) {
+                    console.warn(`Element setting-${type}-body not found!`);
+                    return;
+                }
+                
+                const items = AppState.settings[type] || [];
+                console.log(`Rendering ${type}, item count: ${items.length}`);
+                
+                let html = '';
+                items.forEach((item, index) => {
+                    let recipeInfo = '';
+                    if (type === 'gb') {
+                        const count = Object.values(item.recipe || {}).reduce((a,b)=>a+b, 0);
+                        recipeInfo = `<button class="btn btn-outline" style="padding:0.3rem 0.6rem; font-size:0.8rem" onclick="openRecipeModal('${item.id}')"><i class="fa-solid fa-list-ol"></i> 配方 (${count}顆)</button>`;
+                    }
+
+                    html += `
+                        <tr>
+                            <td style="text-align:center;">
+                                <label class="toggle-switch">
+                                    <input type="checkbox" ${item.active ? 'checked' : ''} onchange="updateSetting('${type}', ${index}, 'active', this.checked)">
+                                    <span class="slider"></span>
+                                </label>
+                            </td>
+                            <td><input type="text" style="text-align:center" value="${item.name}" onchange="updateSetting('${type}', ${index}, 'name', this.value)"></td>
+                            <td><input type="number" style="text-align:center" value="${item.price}" onchange="updateSetting('${type}', ${index}, 'price', this.value)"></td>
+                            ${type === 'gb' ? `<td>${recipeInfo}</td>` : ''}
+                            <td style="text-align:center;"><button class="btn-icon" onclick="deleteSetting('${type}', ${index})"><i class="fa-solid fa-trash"></i></button></td>
+                        </tr>
+                    `;
+                });
+                tbody.innerHTML = html || '<tr><td colspan="5" style="text-align:center; opacity:0.5; padding:1rem;">尚無品項，請點選右上角新增</td></tr>';
+            });
+        }
+
+        let currentGBId = null;
+        function openRecipeModal(gbId) {
+            currentGBId = gbId;
+            const gb = AppState.settings.gb.find(i => i.id === gbId);
+            document.getElementById('modalTitle').textContent = `設定「${gb.name}」配方`;
+            
+            const container = document.getElementById('recipeItems');
+            container.innerHTML = '';
+            
+            // Allow selecting from all active single (sg) items
+            AppState.settings.sg.forEach(sg => {
+                const count = gb.recipe?.[sg.name] || 0;
+                container.innerHTML += `
+                    <div class="recipe-row">
+                        <span>${sg.name}</span>
+                        <input type="number" class="qty-input" value="${count}" onchange="updateRecipe('${gbId}', '${sg.name}', this.value)">
+                    </div>
+                `;
+            });
+            
+            document.getElementById('recipeModal').style.display = 'flex';
+        }
+
+        function closeRecipeModal() {
+            document.getElementById('recipeModal').style.display = 'none';
+            renderSettings();
+        }
+
+        function updateRecipe(gbId, sgName, value) {
+            const gb = AppState.settings.gb.find(i => i.id === gbId);
+            if (!gb.recipe) gb.recipe = {};
+            gb.recipe[sgName] = parseInt(value) || 0;
+            saveSettings();
+            fullRenderDashboard(); // Recalculate inventory
+        }
+
+        function addSettingItem(type) {
+            AppState.settings[type].push({ id: generateId(), name: '新品項', price: 0, active: true });
+            saveSettings();
+            renderSettings();
+        }
+
+        function deleteSetting(type, index) {
+            if(confirm("確定刪除此品項設定嗎？(會影響歷史訂單)")) {
+                AppState.settings[type].splice(index, 1);
+                saveSettings();
+                renderSettings();
+            }
+        }
+
+        function updateSetting(type, index, field, value) {
+            if(field === 'price') value = parseFloat(value) || 0;
+            AppState.settings[type][index][field] = value;
+            saveSettings();
+            recalcAllOrders();
+            saveDailyData(); // Save immediately in case price affects current totals
+        }
+
+        function recalcAllOrders() {
+            AppState.orders.forEach(recalcOrder);
+        }
+
+        function addOrder() {
+            AppState.orders.push(newOrder());
+            fullRenderDashboard();
+            saveDailyData();
+        }
+
+        function deleteOrder(id) {
+            if(AppState.orders.length > 1) {
+                AppState.orders = AppState.orders.filter(o => o.id !== id);
+                fullRenderDashboard();
+                saveDailyData();
+            } else {
+                alert("需保留至少一筆訂單");
+            }
+        }
+
+        function fullRenderDashboard() {
+            const activeGB = AppState.settings.gb.filter(i => i.active);
+            const activeSG = AppState.settings.sg.filter(i => i.active);
+
+            let thead = `
+                <tr>
+                    <th rowspan="2" class="sticky-col">購買人</th>
+                    ${activeGB.length ? `<th colspan="${activeGB.length}" class="group-header">禮盒</th>` : ''}
+                    ${activeSG.length ? `<th colspan="${activeSG.length}" class="group-header" style="background:#a2d2ff !important; border-bottom-color:#83c5be">單顆</th>` : ''}
+                    <th colspan="4" class="group-header" style="background:#e2ece9 !important; border-bottom-color:#83c5be">金額結算</th>
+                    <th rowspan="2">收款狀態</th>
+                    <th rowspan="2">備註/金流說明</th>
+                    <th rowspan="2" class="sticky-right">操作</th>
+                </tr><tr>
+            `;
+            activeGB.forEach(i => { thead += `<th>${i.name}</th>`; });
+            activeSG.forEach(i => { thead += `<th>${i.name}</th>`; });
+            thead += `<th>商品金額</th><th>運費</th><th>折讓</th><th>應收金額</th></tr>`;
+            document.querySelector('#salesTable thead').innerHTML = thead;
+
+            const tbody = document.getElementById('salesBody');
+            tbody.innerHTML = '';
+            AppState.orders.forEach(order => {
+                let html = `<tr data-id="${order.id}">
+                    <td class="sticky-col"><input type="text" class="name-input order-buyer" placeholder="姓名" value="${order.buyer}"></td>
+                `;
+                activeGB.forEach(i => { html += `<td><input type="number" class="qty-input order-qty" data-item="${i.id}" min="0" value="${order.items[i.id]||0}" onclick="this.select()"></td>`; });
+                activeSG.forEach(i => { html += `<td><input type="number" class="qty-input order-qty" data-item="${i.id}" min="0" value="${order.items[i.id]||0}" onclick="this.select()"></td>`; });
+                
+                html += `
+                    <td><input type="number" class="amt-input order-prod" value="${order.prodAmt}" readonly style="background:#efefef; color:#666; font-weight:bold;"></td>
+                    <td><input type="number" class="amt-input order-ship" value="${order.shipAmt}" min="0" onclick="this.select()"></td>
+                    <td><input type="number" class="amt-input order-disc" value="${order.discAmt}" min="0" onclick="this.select()"></td>
+                    <td><input type="number" class="amt-input order-actual" value="${order.actualAmt}" readonly style="font-weight:bold; color:var(--primary); background:#efefef"></td>
+                    <td>
+                        <select class="status-sel order-status">
+                            <option value="匯款" ${order.status==='匯款'?'selected':''}>匯款</option>
+                            <option value="現結" ${order.status==='現結'?'selected':''}>現結</option>
+                            <option value="未結帳款" ${order.status==='未結帳款'?'selected':''}>未結帳款</option>
+                            <option value="公關品" ${order.status==='公關品'?'selected':''}>公關品</option>
+                        </select>
+                    </td>
+                    <td><input type="text" class="note-input order-notes" style="width:130px;" value="${order.notes}"></td>
+                    <td class="sticky-right"><button class="btn-icon" onclick="deleteOrder('${order.id}')"><i class="fa-solid fa-trash"></i></button></td>
+                </tr>`;
+                tbody.innerHTML += html;
+            });
+
+            const uniqueFlavors = Array.from(new Set([
+                ...AppState.settings.gb.filter(i=>i.active && i.name!=='綜合').map(i=>i.name),
+                ...AppState.settings.sg.filter(i=>i.active && i.name!=='綜合').map(i=>i.name)
+            ]));
+            
+            uniqueFlavors.forEach(f => {
+                if(!AppState.inventoryState[f]) AppState.inventoryState[f] = { org:0, exp:0, act:0, los:0 };
+            });
+
+            const invTbody = document.getElementById('tbl-inventory');
+            invTbody.innerHTML = '';
+            uniqueFlavors.forEach(f => {
+                const s = AppState.inventoryState[f] || { org:0, exp:0, act:0, los:0 };
+                invTbody.innerHTML += `
+                    <tr data-flavor="${f}">
+                        <td style="font-weight:600;">${f}</td>
+                        <td><input type="number" class="qty-input inv-in" data-field="org" value="${s.org}" readonly style="background:#f0f0f0; color:#666; cursor:not-allowed;"></td>
+                        <td><input type="number" class="qty-input inv-in" data-field="exp" value="${s.exp}" onclick="this.select()"></td>
+                        <td><input type="number" class="qty-input inv-in" data-field="act" value="${s.act}" onclick="this.select()"></td>
+                        <td><input type="number" class="qty-input inv-in" data-field="los" value="${s.los}" readonly style="background:#f0f0f0; color:#666; cursor:not-allowed;"></td>
+                        <td class="computed inv-out">0</td>
+                        <td class="computed inv-today text-primary" style="font-size:1.1rem;">0</td>
+                        <td class="inv-rate">0%</td>
+                    </tr>
+                `;
+            });
+
+            renderLossLog();
+            renderPkgUsage();
+            updateDashboardMetrics();
+        }
+
+        // ---- PKG LOGIC ----
+        function renderPkgUsage() {
+            const activePkg = AppState.settings.pkg.filter(i => i.active);
+            const tbody = document.getElementById('tbl-pkg-usage');
+            if (!tbody) return;
+            tbody.innerHTML = '';
+            
+            let totalCost = 0;
+            activePkg.forEach(p => {
+                const qty = AppState.pkgUsage[p.id] || 0;
+                const subtotal = qty * p.price;
+                totalCost += subtotal;
+                tbody.innerHTML += `
+                    <tr>
+                        <td>${p.name}</td>
+                        <td>${p.price}</td>
+                        <td><input type="number" class="qty-input pkg-in" data-id="${p.id}" value="${qty}" onclick="this.select()"></td>
+                        <td class="computed">${subtotal.toLocaleString()}</td>
+                    </tr>
+                `;
+            });
+            document.getElementById('pkg-total-cost').textContent = totalCost.toLocaleString();
+        }
+
+        // ---- LOSS LOG LOGIC ----
+
+        function addLossEntry() {
+            const flavors = Array.from(new Set([
+                ...AppState.settings.gb.filter(i=>i.active && i.name!=='綜合').map(i=>i.name),
+                ...AppState.settings.sg.filter(i=>i.active && i.name!=='綜合').map(i=>i.name)
+            ]));
+            
+            AppState.lossLog.push({
+                id: generateId(),
+                flavor: flavors[0] || '',
+                qty: 0,
+                type: '技術',
+                notes: ''
+            });
+            renderLossLog();
+            updateDashboardMetrics();
+            saveDailyData();
+        }
+
+        function deleteLossEntry(id) {
+            AppState.lossLog = AppState.lossLog.filter(l => l.id !== id);
+            renderLossLog();
+            updateDashboardMetrics();
+            saveDailyData();
+        }
+
+        function updateLossEntry(id, field, value) {
+            const entry = AppState.lossLog.find(l => l.id === id);
+            if (entry) {
+                entry[field] = field === 'qty' ? (parseFloat(value) || 0) : value;
+                updateDashboardMetrics();
+                saveDailyData();
+            }
+        }
+
+        function renderLossLog() {
+            const flavors = Array.from(new Set([
+                ...AppState.settings.gb.filter(i=>i.active && i.name!=='綜合').map(i=>i.name),
+                ...AppState.settings.sg.filter(i=>i.active && i.name!=='綜合').map(i=>i.name)
+            ]));
+            
+            const tbody = document.getElementById('lossLogBody');
+            tbody.innerHTML = '';
+            
+            AppState.lossLog.forEach(log => {
+                let flavorOptions = flavors.map(f => `<option value="${f}" ${log.flavor===f?'selected':''}>${f}</option>`).join('');
+                tbody.innerHTML += `
+                    <tr>
+                        <td><select class="status-sel" onchange="updateLossEntry('${log.id}', 'flavor', this.value)">${flavorOptions}</select></td>
+                        <td><input type="number" class="qty-input" value="${log.qty}" oninput="updateLossEntry('${log.id}', 'qty', this.value)" onclick="this.select()"></td>
+                        <td>
+                            <select class="status-sel" onchange="updateLossEntry('${log.id}', 'type', this.value)">
+                                <option value="技術" ${log.type==='技術'?'selected':''}>技術</option>
+                                <option value="人為" ${log.type==='人為'?'selected':''}>人為</option>
+                                <option value="過期" ${log.type==='過期'?'selected':''}>過期</option>
+                                <option value="吃掉" ${log.type==='吃掉'?'selected':''}>吃掉</option>
+                            </select>
+                        </td>
+                        <td><input type="text" class="note-input" style="width:100%" value="${log.notes}" oninput="updateLossEntry('${log.id}', 'notes', this.value)"></td>
+                        <td><button class="btn-icon" onclick="deleteLossEntry('${log.id}')"><i class="fa-solid fa-trash"></i></button></td>
+                    </tr>
+                `;
+            });
+        }
+
+        // Live Event Delegation
+        document.addEventListener('input', (e) => {
+            if(e.target.id === 'sum-actual-input') {
+                AppState.ar.actualTotal = parseFloat(e.target.value) || 0;
+                updateDashboardMetrics();
+                saveDailyData();
+                return;
+            }
+
+            if(e.target.classList.contains('ar-in')) {
+                AppState.ar[e.target.dataset.field] = parseFloat(e.target.value) || 0;
+                updateDashboardMetrics();
+                saveDailyData();
+                return;
+            }
+
+            if(e.target.classList.contains('inv-in')) {
+                const tr = e.target.closest('tr');
+                const flavor = tr.dataset.flavor;
+                const field = e.target.dataset.field;
+                if (!AppState.inventoryState[flavor]) AppState.inventoryState[flavor] = { org:0, exp:0, act:0, los:0 };
+                AppState.inventoryState[flavor][field] = parseFloat(e.target.value) || 0;
+                updateDashboardMetrics();
+                saveDailyData();
+                return;
+            }
+
+            if(e.target.classList.contains('pkg-in')) {
+                const id = e.target.dataset.id;
+                AppState.pkgUsage[id] = parseFloat(e.target.value) || 0;
+                renderPkgUsage();
+                updateDashboardMetrics();
+                saveDailyData();
+                return;
+            }
+
+            const tr = e.target.closest('#salesBody tr');
+            if(tr) {
+                const order = AppState.orders.find(o => o.id === tr.dataset.id);
+                if(!order) return;
+
+                if(e.target.classList.contains('order-buyer')) { order.buyer = e.target.value; }
+                else if(e.target.classList.contains('order-notes')) { order.notes = e.target.value; }
+                else if(e.target.classList.contains('order-qty')) {
+                    order.items[e.target.dataset.item] = parseInt(e.target.value) || 0;
+                    recalcOrder(order);
+                    tr.querySelector('.order-prod').value = order.prodAmt;
+                    tr.querySelector('.order-actual').value = order.actualAmt;
+                }
+                else if(e.target.classList.contains('order-ship')) {
+                    order.shipAmt = parseFloat(e.target.value) || 0;
+                    recalcOrder(order);
+                    tr.querySelector('.order-actual').value = order.actualAmt;
+                }
+                else if(e.target.classList.contains('order-disc')) {
+                    order.discAmt = parseFloat(e.target.value) || 0;
+                    recalcOrder(order);
+                    tr.querySelector('.order-actual').value = order.actualAmt;
+                }
+                else if(e.target.classList.contains('order-actual')) {
+                    order.actualAmt = parseFloat(e.target.value) || 0;
+                }
+                updateDashboardMetrics();
+                saveDailyData();
+            }
+        });
+
+        document.addEventListener('change', (e) => {
+            if(e.target.classList.contains('order-status')) {
+                const order = AppState.orders.find(o => o.id === e.target.closest('tr').dataset.id);
+                if(order) order.status = e.target.value;
+                updateDashboardMetrics();
+                saveDailyData();
+            }
+        });
+
+        function recalcOrder(order) {
+            let pAmt = 0;
+            ['gb', 'sg'].forEach(type => {
+                AppState.settings[type].forEach(item => {
+                    pAmt += (order.items[item.id] || 0) * item.price;
+                });
+            });
+            order.prodAmt = pAmt;
+            order.actualAmt = pAmt + order.shipAmt - order.discAmt;
+        }
+
+        function updateDashboardMetrics() {
+            let d = {
+                rev: 0, ship: 0, prShip: 0, disc: 0, prVal: 0, recv: 0, act: 0, remit: 0, cash: 0, unpaid: 0,
+                qty: { gb: {}, sg: {}, prGB: {}, prSG: {} }
+            };
+            
+            // Collect all known item names to ensure we track everything
+            const allItems = [...AppState.settings.gb, ...AppState.settings.sg];
+            AppState.settings.gb.forEach(i => { d.qty.gb[i.name]=0; d.qty.prGB[i.name]=0; });
+            AppState.settings.sg.forEach(i => { d.qty.sg[i.name]=0; d.qty.prSG[i.name]=0; });
+
+            AppState.orders.forEach(o => {
+                const isPR = o.status === '公關品';
+                d.rev += o.prodAmt; 
+                d.disc += o.discAmt;
+                
+                if(isPR) { 
+                    d.prVal += o.prodAmt; 
+                    d.prShip += o.shipAmt;
+                } else {
+                    d.ship += o.shipAmt;
+                    d.recv += o.actualAmt;
+                    if(o.status === '匯款') { d.remit += o.actualAmt; d.act += o.actualAmt; }
+                    if(o.status === '現結') { d.cash += o.actualAmt; d.act += o.actualAmt; }
+                    if(o.status === '未結帳款') { d.unpaid += o.actualAmt; }
+                }
+
+                AppState.settings.gb.forEach(i => {
+                    const count = (o.items[i.id] || 0);
+                    if(isPR) d.qty.prGB[i.name] += count;
+                    else d.qty.gb[i.name] += count;
+                });
+                AppState.settings.sg.forEach(i => {
+                    const count = (o.items[i.id] || 0);
+                    if(isPR) d.qty.prSG[i.name] += count;
+                    else d.qty.sg[i.name] += count;
+                });
+            });
+
+            document.getElementById('sum-rev').textContent = d.rev.toLocaleString();
+            document.getElementById('sum-ship').textContent = d.ship.toLocaleString();
+            document.getElementById('sum-disc').textContent = d.disc.toLocaleString();
+            document.getElementById('sum-pr').textContent = d.prVal.toLocaleString();
+            document.getElementById('sum-net').textContent = (d.recv - d.ship).toLocaleString();
+            document.getElementById('sum-receivable').textContent = d.recv.toLocaleString();
+            
+            document.getElementById('sum-remit').textContent = d.remit.toLocaleString();
+            document.getElementById('sum-cash').textContent = d.cash.toLocaleString();
+            document.getElementById('sum-unpaid').textContent = d.unpaid.toLocaleString();
+
+            document.getElementById('ar-today').textContent = d.unpaid.toLocaleString();
+            const arRemain = AppState.ar.accum + d.unpaid - AppState.ar.collect;
+            document.getElementById('ar-remain').textContent = arRemain.toLocaleString();
+            
+            document.getElementById('log-collect').textContent = d.ship.toLocaleString();
+            document.getElementById('log-pr-ship').textContent = d.prShip.toLocaleString();
+            const logDiff = d.ship - AppState.ar.logSpent;
+            document.getElementById('log-diff').textContent = logDiff.toLocaleString();
+            document.getElementById('log-diff').className = logDiff < 0 ? 'val text-danger' : 'val text-success';
+
+            // Only show items in summary tables that are either ACTIVE or have SALES
+            const gbTbody = document.getElementById('tbl-sales-gb');
+            gbTbody.innerHTML = '';
+            AppState.settings.gb.forEach(i => {
+                const total = d.qty.gb[i.name] + d.qty.prGB[i.name];
+                if (i.active || total > 0) {
+                    gbTbody.innerHTML += `<tr><td>${i.name}</td><td>${d.qty.gb[i.name]}</td><td>${d.qty.prGB[i.name]}</td><td class="computed">${total}</td></tr>`;
+                }
+            });
+
+            const sgTbody = document.getElementById('tbl-sales-sg');
+            sgTbody.innerHTML = '';
+            AppState.settings.sg.forEach(i => {
+                const total = d.qty.sg[i.name] + d.qty.prSG[i.name];
+                if (i.active || total > 0) {
+                    sgTbody.innerHTML += `<tr><td>${i.name}</td><td>${d.qty.sg[i.name]}</td><td>${d.qty.prSG[i.name]}</td><td class="computed">${total}</td></tr>`;
+                }
+            });
+
+            document.querySelectorAll('#tbl-inventory tr').forEach(tr => {
+                const f = tr.dataset.flavor;
+
+                // Calculate total consumption of this flavor from all Gift Boxes
+                let gbConsumption = 0;
+                AppState.settings.gb.forEach(gb => {
+                    const countInBox = (gb.recipe && gb.recipe[f]) ? gb.recipe[f] : 0;
+                    const totalGBSold = (d.qty.gb[gb.name] || 0) + (d.qty.prGB[gb.name] || 0);
+                    gbConsumption += totalGBSold * countInBox;
+                });
+
+                const outTotal = (d.qty.sg[f]||0) + (d.qty.prSG[f]||0) + gbConsumption;
+                tr.querySelector('.inv-out').textContent = outTotal;
+                
+                // 自動加總耗損紀錄簿中的該口味總量
+                const flavorLossTotal = AppState.lossLog.filter(l => l.flavor === f).reduce((sum, l) => sum + l.qty, 0);
+                if (!AppState.inventoryState[f]) AppState.inventoryState[f] = { org:0, act:0, los:0 };
+                AppState.inventoryState[f].los = flavorLossTotal;
+                tr.querySelector('.inv-in[data-field="los"]').value = flavorLossTotal;
+
+                const s = AppState.inventoryState[f];
+                const today = s.org + s.act - s.los - outTotal;
+                tr.querySelector('.inv-today').textContent = today;
+                tr.querySelector('.inv-today').className = today < 0 ? 'computed inv-today text-danger' : 'computed inv-today text-primary';
+                let rate = 0; if(s.act > 0) rate = (s.los / s.act) * 100;
+                tr.querySelector('.inv-rate').textContent = rate.toFixed(1) + '%';
+            });
+        }
+    </script>
+</body>
+</html>
