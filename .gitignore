@@ -1,2 +1,6 @@
 *.xlsx
 *.zip
+*.md
+*.json
+*.js
+*node_modules/
